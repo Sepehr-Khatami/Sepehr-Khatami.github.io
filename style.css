@@ -1,0 +1,14 @@
+body{
+    background-color: white;
+    
+    text-align: center;
+}
+h1{
+    text-align: center;
+}
+div{
+    text-align: justify;
+    border: 3px;
+    border-style: dashed;
+    border-color: white;
+}
