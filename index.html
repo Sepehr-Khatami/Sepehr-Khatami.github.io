@@ -11,21 +11,12 @@
   <link href="https://fonts.googleapis.com/css2?family=Vazir:wght@400;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 
-  <style>
-    .prize-animation {
-      display: none;
-      animation: prizeReveal 1.5s forwards;
-    }
-
-    @keyframes prizeReveal {
-      0% { transform: scale(0); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-  </style>
+  <!-- Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body>
   <div class="container d-flex justify-content-center align-items-center min-vh-100 flex-column">
-    <div class="card text-center shadow-lg">
+    <div class="card text-center shadow-lg animate-entry">
       <img src="logo.png" alt="Logo" class="logo mb-4" />
       <h1 class="mb-3">اینجا همه برنده میشن 🎉</h1>
 
@@ -35,44 +26,49 @@
 
       <button id="revealBtn" class="btn btn-success w-100 mb-3">🎁 جایزه رو باز کن</button>
 
+      <!-- Prize container (revealed after button click) -->
+      <div id="prizeContainer" class="prize-container">
+        <p id="prizeText" class="prize-text"></p>
+        <p id="uniqueCode" class="unique-code"></p>
+      </div>
+
       <p class="location-text mb-3">ما اینجاییم 👇</p>
 
       <a href="https://maps.app.goo.gl/2LWAPE42bHR2eVaPA" target="_blank" class="btn btn-primary w-100 mb-3">📍 پیدا کردن یوکیو در گوگل مپ</a>
       <a href="https://www.instagram.com/ukiyocafe.ir" target="_blank" class="btn btn-secondary w-100">📸 یوکیو در اینستاگرام</a>
-
-      <div id="prizeAnimation" class="prize-animation mt-4">
-        <p id="prizeText" class="fw-bold fs-4 text-success"></p>
-      </div>
     </div>
   </div>
 
-  <!-- Supabase & FingerprintJS -->
+  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <!-- FingerprintJS -->
+  <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3.3.0/dist/fp.min.js"></script>
+
   <script>
-    const supabase = supabase.createClient(
+    const supabaseClient = window.supabase.createClient(
       'https://rteddufainjlryrcoecf.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0ZWRkdWZhaW5qbHJ5cmNvZWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU5OTYxMjEsImV4cCI6MjA2MTU3MjEyMX0.R4ryhqdL5tD33ZG1EqiBLDrevraXHFtSe33udRdCrVQ'
     );
-  </script>
 
-  <script>
-    // Load FingerprintJS from official CDN
-    const fpPromise = import('https://openfpcdn.io/fingerprintjs/v3')
-      .then(FingerprintJS => FingerprintJS.load());
-
-    const prizes = ['☕️ یک قهوه رایگان', '🍰 یک دسر رایگان', '💸 تخفیف ۲۰٪'];
+    const prizes = [
+      { text: '20% تخفیف منو قهوه', emoji: '\u2615' }, // Coffee emoji
+      { text: '10% تخفیف منوی غذا', emoji: '\u1F374' }, // Fork and knife emoji
+      { text: '20 هزار تومن تخفیف خرید بالای 200 هزار تومان', emoji: '\u1F4B8' }, // Money emoji
+      { text: 'دسر رایگان برای خری بالای 400 هزار تومان', emoji: '\u1F370' } // Dessert emoji
+    ];
     const revealBtn = document.getElementById('revealBtn');
     const prizeText = document.getElementById('prizeText');
-    const prizeDiv = document.getElementById('prizeAnimation');
+    const uniqueCode = document.getElementById('uniqueCode');
+    const prizeContainer = document.getElementById('prizeContainer');
 
     async function getFingerprint() {
       try {
-        const fp = await fpPromise;
+        const fp = await FingerprintJS.load();
         const result = await fp.get();
         return result.visitorId;
       } catch (err) {
-        console.error('FingerprintJS error:', err);
-        throw err;
+        console.error("FingerprintJS failed:", err);
+        throw new Error("FingerprintJS failed");
       }
     }
 
@@ -82,41 +78,68 @@
 
       try {
         userId = await getFingerprint();
-        console.log("Visitor ID:", userId);
+        console.log("✅ Visitor ID:", userId);
       } catch {
-        alert("خطا در دریافت شناسه دستگاه.");
+        alert("⚠️ خطا در دریافت شناسه دستگاه.");
         revealBtn.disabled = false;
         return;
       }
 
       try {
-        const { data: existingClaim, error: fetchError } = await supabase
+        console.log("🔎 Checking existing claim for user:", userId);
+        const { data: existingClaim, error: fetchError } = await supabaseClient
           .from('claims')
           .select('*')
           .eq('user_id', userId)
           .single();
 
-        let prize = existingClaim?.prize;
-
-        if (!prize) {
-          prize = prizes[Math.floor(Math.random() * prizes.length)];
-
-          const { error: insertError } = await supabase
-            .from('claims')
-            .insert([{ user_id: userId, prize }]);
-
-          if (insertError) {
-            console.error("Insert error:", insertError);
-            alert('خطا در ذخیره جایزه. لطفاً دوباره امتحان کن.');
-            return;
-          }
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          console.error("❌ Fetch error:", fetchError);
+          alert("مشکلی پیش آمده، لطفاً دوباره امتحان کن.");
+          return;
         }
 
-        prizeText.innerText = prize;
-        prizeDiv.style.display = 'block';
+        let prize = existingClaim?.prize;
+        let prizeemoji = '';
+
+        if (!prize) {
+          const selectedPrize = prizes[Math.floor(Math.random() * prizes.length)];
+          prize = selectedPrize.text;
+          prizeemoji = selectedPrize.emoji;
+          console.log("🎲 New prize selected:", prize);
+
+          // Create a unique code with a shortened format
+          const uniqueCodeValue = `UKIYO-${userId.substring(0, 8)}-${Date.now().toString().slice(-4)}`;
+          console.log("💎 Unique code:", uniqueCodeValue);
+
+          const { error: insertError } = await supabaseClient
+            .from('claims')
+            .insert([{ user_id: userId, prize, unique_code: uniqueCodeValue }]);
+
+          if (insertError) {
+            console.error("❌ Insert error:", insertError);
+            alert("خطا در ذخیره جایزه. لطفاً دوباره امتحان کن.");
+            return;
+          }
+
+          uniqueCode.innerText = `کد شما: ${uniqueCodeValue}`;
+        } else {
+          console.log("🎁 Prize already claimed:", prize);
+          uniqueCode.innerText = `کد شما: ${existingClaim.unique_code}`;
+        }
+
+        prizeText.innerText = `${prize} ${prizeemoji}`;
+        prizeContainer.style.display = 'block';
+
+        // Trigger confetti animation
+        confetti({
+          particleCount: 120,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
 
       } catch (err) {
-        console.error('Error checking/creating prize:', err);
+        console.error("🔻 Supabase operation failed:", err);
         alert("مشکلی پیش آمده، لطفاً دوباره امتحان کن.");
       } finally {
         revealBtn.disabled = false;
