@@ -118,6 +118,29 @@ h1 {
   margin-top: 20px;
 }
 
+/* Prize reveal section */
+.prize-container {
+  border: 2px solid #28a745; /* Green border around prize section */
+  padding: 15px;
+  margin-top: 20px;
+  display: none;
+  text-align: center;
+  border-radius: 10px;
+  background-color: #f8f9fa;
+}
+
+.prize-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #28a745;
+}
+
+.unique-code {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-top: 10px;
+}
+
 @media (max-width: 576px) {
   /* Adjustments for small devices */
   .card {
