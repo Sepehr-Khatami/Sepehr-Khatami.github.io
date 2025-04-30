@@ -46,15 +46,19 @@
     </div>
   </div>
 
-  <!-- Scripts: FingerprintJS + Supabase -->
+  <!-- Supabase & FingerprintJS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="https://fpjscdn.net/v4/fp.min.js"></script>
-
   <script>
     const supabase = supabase.createClient(
       'https://rteddufainjlryrcoecf.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0ZWRkdWZhaW5qbHJ5cmNvZWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU5OTYxMjEsImV4cCI6MjA2MTU3MjEyMX0.R4ryhqdL5tD33ZG1EqiBLDrevraXHFtSe33udRdCrVQ'
     );
+  </script>
+
+  <script>
+    // Load FingerprintJS from official CDN
+    const fpPromise = import('https://openfpcdn.io/fingerprintjs/v3')
+      .then(FingerprintJS => FingerprintJS.load());
 
     const prizes = ['☕️ یک قهوه رایگان', '🍰 یک دسر رایگان', '💸 تخفیف ۲۰٪'];
     const revealBtn = document.getElementById('revealBtn');
@@ -62,15 +66,14 @@
     const prizeDiv = document.getElementById('prizeAnimation');
 
     async function getFingerprint() {
-      return new Promise((resolve, reject) => {
-        FingerprintJS.load()
-          .then(fp => fp.get())
-          .then(result => resolve(result.visitorId))
-          .catch(err => {
-            console.error('FingerprintJS error:', err);
-            reject(err);
-          });
-      });
+      try {
+        const fp = await fpPromise;
+        const result = await fp.get();
+        return result.visitorId;
+      } catch (err) {
+        console.error('FingerprintJS error:', err);
+        throw err;
+      }
     }
 
     async function handleRevealPrize() {
@@ -82,6 +85,7 @@
         console.log("Visitor ID:", userId);
       } catch {
         alert("خطا در دریافت شناسه دستگاه.");
+        revealBtn.disabled = false;
         return;
       }
 
@@ -114,6 +118,8 @@
       } catch (err) {
         console.error('Error checking/creating prize:', err);
         alert("مشکلی پیش آمده، لطفاً دوباره امتحان کن.");
+      } finally {
+        revealBtn.disabled = false;
       }
     }
 
