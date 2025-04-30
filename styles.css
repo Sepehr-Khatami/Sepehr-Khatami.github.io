@@ -7,13 +7,43 @@
 
 body {
   font-family: 'Vazir', sans-serif;
-  background: linear-gradient(135deg, #D0C9FF, #F9F9FF); /* Soft gradient background for a calm vibe */
+  background: linear-gradient(135deg, #D0C9FF, #F9F9FF);
   color: #333;
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Floating background animation (optional aesthetic) */
+body::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: floatBackground 20s linear infinite;
+  z-index: 0;
+}
+
+@keyframes floatBackground {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(60px, 60px);
+  }
+}
+
+.container {
+  position: relative;
+  z-index: 1;
 }
 
 .card {
@@ -30,12 +60,13 @@ body {
   width: 80%;
   max-width: 250px;
   height: auto;
+  display: block;
   margin: 0 auto;
 }
 
 h1 {
   font-size: 2rem;
-  color: #4B4B4B; /* Dark gray text for the heading */
+  color: #4B4B4B;
   font-weight: bold;
   line-height: 1.4;
   margin: 20px 0;
@@ -43,7 +74,7 @@ h1 {
 
 .message {
   font-size: 1.2rem;
-  color: #5C5C5C; /* Slightly lighter gray for message text */
+  color: #5C5C5C;
   margin: 20px 0;
   line-height: 1.5;
 }
@@ -57,7 +88,7 @@ h1 {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #F5F5F5; /* Subtle light gray background for the image container */
+  background-color: #F5F5F5;
 }
 
 .random-image {
@@ -67,9 +98,10 @@ h1 {
 }
 
 .location-text {
-  font-size: 1.4rem;
-  color: #3C3C3C; /* Dark gray for location text */
-  margin-bottom: 20px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin: 20px 0;
 }
 
 .btn {
@@ -78,35 +110,91 @@ h1 {
   border-radius: 8px;
   text-decoration: none;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  width: 120%;
+  height: 200%;
+  top: -100%;
+  left: -10%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(45deg);
+  transition: all 0.5s ease;
+}
+
+.btn:hover::after {
+  top: 100%;
 }
 
 .btn-primary {
-  background-color: #4CAF50; /* Green color for Google Maps button */
+  background-color: #4CAF50;
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #45a049; /* Slight darkening effect on hover */
+  background-color: #45a049;
 }
 
 .btn-secondary {
-  background-color: #3f8ca3; /* Soft blue for Instagram button */
+  background-color: #3f8ca3;
   color: white;
 }
 
 .btn-secondary:hover {
-  background-color: #355f7e; /* Slight darkening effect on hover */
+  background-color: #355f7e;
 }
 
-.location-text {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #333;
+/* Prize Container */
+.prize-container {
+  border: 2px solid #28a745;
+  padding: 15px;
   margin-top: 20px;
+  text-align: center;
+  border-radius: 10px;
+  background-color: #f8f9fa;
+  display: none;
+  animation: prizeFadeIn 1s ease-in-out forwards;
 }
 
+@keyframes prizeFadeIn {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.prize-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #28a745;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.unique-code {
+  font-size: 0.85rem;
+  color: #6c757d;
+  margin-top: 10px;
+}
+
+/* Responsive */
 @media (max-width: 576px) {
-  /* Adjustments for small devices */
   .card {
     padding: 20px;
   }
@@ -114,5 +202,48 @@ h1 {
   .btn {
     width: 100%;
     margin-bottom: 10px;
+  }
+}
+/* Entry animation for the whole body */
+.animate-entry {
+  animation: fadeSlideIn 1s ease-out forwards;
+}
+
+@keyframes fadeSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Confetti already handled via JS */
+
+/* Button press animation */
+.btn {
+  transition: all 0.3s ease, transform 0.15s ease;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* Prize animation (existing improved) */
+.prize-animation {
+  animation: prizeReveal 1.5s ease forwards;
+  transform-origin: center;
+}
+
+@keyframes prizeReveal {
+  0% {
+    transform: scale(0.5) rotate(-10deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
   }
 }
