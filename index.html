@@ -1,47 +1,123 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تو منو پیدا کردی</title>
-  <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>پیدامون کردی!</title>
+  <link rel="icon" href="logo.png" type="image/png" />
+
+  <!-- Bootstrap & Fonts -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Vazir:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+
   <style>
-    body {
-      font-family: 'Vazirmatn', sans-serif;
+    .prize-animation {
+      display: none;
+      animation: prizeReveal 1.5s forwards;
     }
-    .random-image {
-      width: 100%;
-      max-width: 100%;
-      height: auto;
-      border-radius: 16px;
-      margin-top: 20px;
+
+    @keyframes prizeReveal {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h1>تو منو پیدا کردی.</h1>
-      <img id="randomImage" class="random-image" alt="تصویر آرامش‌بخش">
-      <p class="message">تو کسی هستی که به جزئیات توجه می‌کنه!<br>
-      از این صفحه اسکرین‌شات بگیر و در <strong>کافه یوکیو</strong> نشون بده تا یه تخفیف غافلگیرکننده بگیری.</p>
-      <a href="https://maps.app.goo.gl/2LWAPE42bHR2eVaPA" target="_blank" class="btn">📍 پیدا کردن یوکیو در گوگل مپ</a>
+  <div class="container d-flex justify-content-center align-items-center min-vh-100 flex-column">
+    <div class="card text-center shadow-lg">
+      <img src="logo.png" alt="Logo" class="logo mb-4" />
+      <h1 class="mb-3">اینجا همه برنده میشن 🎉</h1>
+
+      <p class="message mb-4">
+        از جایزه اسکرین شات بگیر به ما نشون بده 📸✨
+      </p>
+
+      <button id="revealBtn" class="btn btn-success w-100 mb-3">🎁 جایزه رو باز کن</button>
+
+      <p class="location-text mb-3">ما اینجاییم 👇</p>
+
+      <a href="https://maps.app.goo.gl/2LWAPE42bHR2eVaPA" target="_blank" class="btn btn-primary w-100 mb-3">📍 پیدا کردن یوکیو در گوگل مپ</a>
+      <a href="https://www.instagram.com/ukiyocafe.ir" target="_blank" class="btn btn-secondary w-100">📸 یوکیو در اینستاگرام</a>
+
+      <div id="prizeAnimation" class="prize-animation mt-4">
+        <p id="prizeText" class="fw-bold fs-4 text-success"></p>
+      </div>
     </div>
   </div>
 
+  <!-- Scripts: FingerprintJS + Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://fpjscdn.net/v4/fp.min.js"></script>
+
   <script>
-    // Fetch a random image from Lorem Picsum (no CORS issues)
-    const fetchRandomImage = () => {
-      const imageUrl = 'https://picsum.photos/800/400?random=' + new Date().getTime();  // Adding a timestamp to prevent caching
+    const supabase = supabase.createClient(
+      'https://rteddufainjlryrcoecf.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0ZWRkdWZhaW5qbHJ5cmNvZWNmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU5OTYxMjEsImV4cCI6MjA2MTU3MjEyMX0.R4ryhqdL5tD33ZG1EqiBLDrevraXHFtSe33udRdCrVQ'
+    );
 
-      // Set the fetched image as the src of the image element
-      const img = document.getElementById('randomImage');
-      img.src = imageUrl;
-    };
+    const prizes = ['☕️ یک قهوه رایگان', '🍰 یک دسر رایگان', '💸 تخفیف ۲۰٪'];
+    const revealBtn = document.getElementById('revealBtn');
+    const prizeText = document.getElementById('prizeText');
+    const prizeDiv = document.getElementById('prizeAnimation');
 
-    // Call the function to fetch the image when the page loads
-    window.onload = fetchRandomImage;
+    async function getFingerprint() {
+      return new Promise((resolve, reject) => {
+        FingerprintJS.load()
+          .then(fp => fp.get())
+          .then(result => resolve(result.visitorId))
+          .catch(err => {
+            console.error('FingerprintJS error:', err);
+            reject(err);
+          });
+      });
+    }
+
+    async function handleRevealPrize() {
+      revealBtn.disabled = true;
+      let userId;
+
+      try {
+        userId = await getFingerprint();
+        console.log("Visitor ID:", userId);
+      } catch {
+        alert("خطا در دریافت شناسه دستگاه.");
+        return;
+      }
+
+      try {
+        const { data: existingClaim, error: fetchError } = await supabase
+          .from('claims')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        let prize = existingClaim?.prize;
+
+        if (!prize) {
+          prize = prizes[Math.floor(Math.random() * prizes.length)];
+
+          const { error: insertError } = await supabase
+            .from('claims')
+            .insert([{ user_id: userId, prize }]);
+
+          if (insertError) {
+            console.error("Insert error:", insertError);
+            alert('خطا در ذخیره جایزه. لطفاً دوباره امتحان کن.');
+            return;
+          }
+        }
+
+        prizeText.innerText = prize;
+        prizeDiv.style.display = 'block';
+
+      } catch (err) {
+        console.error('Error checking/creating prize:', err);
+        alert("مشکلی پیش آمده، لطفاً دوباره امتحان کن.");
+      }
+    }
+
+    revealBtn.addEventListener('click', handleRevealPrize);
   </script>
 </body>
 </html>
